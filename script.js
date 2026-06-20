@@ -768,6 +768,19 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// Check if app was launched via File Handling API (Open With dialog)
+if ('launchQueue' in window) {
+  window.launchQueue.setConsumer(async (launchParams) => {
+    if (launchParams.files && launchParams.files.length > 0) {
+      for (const fileHandle of launchParams.files) {
+        const file = await fileHandle.getFile();
+        handleFile(file);
+        break; // Process only the first file
+      }
+    }
+  });
+}
+
 // Check if app was launched via Share Target
 window.addEventListener('DOMContentLoaded', async () => {
   const urlParams = new URLSearchParams(window.location.search);
