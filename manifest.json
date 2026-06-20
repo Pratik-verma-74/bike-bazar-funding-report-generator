@@ -1,0 +1,32 @@
+{
+  "name": "Loan Recovery PDF Converter",
+  "short_name": "RecoveryPDF",
+  "description": "Convert Loan Excel sheets to PDF directly on your device",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0d1b2a",
+  "theme_color": "#0d1b2a",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "share_target": {
+    "action": "./",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "files": [
+        {
+          "name": "file",
+          "accept": [".csv", ".xls", ".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "text/csv"]
+        }
+      ]
+    }
+  }
+}

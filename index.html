@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Loan Recovery PDF Converter</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0d1b2a" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <div class="logo-mark">₹</div>
+      <div>
+        <h1>Loan Recovery PDF Converter</h1>
+        <p class="subtitle">Upload Excel → Auto-map columns → Generate compact recovery sheet PDF</p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- STEP 1: Upload -->
+    <section class="card" id="upload-section">
+      <div class="step-label">Step 1 — Upload Excel File</div>
+
+      <div class="drop-zone" id="dropZone">
+        <div class="drop-icon">📂</div>
+        <div class="drop-text">Drag & drop your Excel file here</div>
+        <div class="drop-sub">.xlsx · .xls · .csv supported</div>
+        <label class="btn btn-outline" for="fileInput">Or browse file</label>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" hidden />
+      </div>
+
+      <div id="fileInfo" class="file-info hidden">
+        <span id="fileName">—</span>
+        <span class="badge" id="recordCount">0 records</span>
+        <button class="btn-icon" id="clearFile" title="Remove file">✕</button>
+      </div>
+    </section>
+
+    <!-- STEP 2: Column mapping preview -->
+    <section class="card hidden" id="mapping-section">
+      <div class="step-label">Step 2 — Column Mapping Preview</div>
+      <p class="map-note">Auto-detected mappings. Fields marked <span class="miss">✕ Missing</span> will be left blank in the PDF.</p>
+      <div id="mappingGrid" class="mapping-grid"></div>
+    </section>
+
+    <!-- STEP 3: Search & View Single Record -->
+    <section class="card hidden" id="search-section">
+      <div class="step-label">Step 3 — Search / View Customer</div>
+      <div class="search-wrap">
+        <input type="text" id="searchInput" placeholder="Enter Loan No..." autocomplete="off" />
+        <button class="btn btn-outline" id="searchBtn">🔍 Search</button>
+      </div>
+      <div id="searchError" class="search-error hidden">Loan number not found in this file.</div>
+      
+      <div id="searchResult" class="result-card hidden">
+        <div class="result-grid" id="resultGrid"></div>
+        <button class="btn btn-primary" id="downloadSingleBtn">⬇ Download This Record (PDF)</button>
+      </div>
+    </section>
+
+    <!-- STEP 4: Generate All -->
+    <section class="card hidden" id="generate-section">
+      <div class="step-label">Step 4 — Generate PDF</div>
+      
+      <select id="agencySelect" class="select-input">
+        <option value="ALL">-- Generate All (Download as ZIP) --</option>
+      </select>
+      <div class="gen-row">
+        <div class="stat-box">
+          <div class="stat-num" id="statRecords">0</div>
+          <div class="stat-lbl">Records</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="statPages">~0</div>
+          <div class="stat-lbl">Est. Pages</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="statCols">14</div>
+          <div class="stat-lbl">Output Columns</div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="generateBtn">
+        <span id="genBtnText">⬇ Generate &amp; Download PDF</span>
+        <div class="spinner hidden" id="spinner"></div>
+      </button>
+
+      <div id="progressWrap" class="progress-wrap hidden">
+        <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+        <div id="progressLabel" class="progress-label">Processing…</div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <span>Loan Recovery PDF Converter &copy; 2026</span>
+    <span>Created by Pratik Verma</span>
+  </footer>
+
+  <!-- SheetJS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- jsPDF AutoTable -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <!-- JSZip -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <!-- FileSaver -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+  <script src="script.js"></script>
+</body>
+</html>
