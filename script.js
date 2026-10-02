@@ -224,6 +224,54 @@ function val(row, ...keys) {
   return '';
 }
 
+/**
+ * Cleans phone number strings (strips Excel .0 decimals, scientific notation)
+ */
+function cleanPhone(raw) {
+  if (!raw && raw !== 0) return '';
+  let s = String(raw).trim();
+  if (/^\d+\.?\d*e\+\d+$/i.test(s)) {
+    try {
+      s = BigInt(Math.round(Number(s))).toString();
+    } catch (e) {}
+  }
+  if (/^\d+\.0+$/.test(s)) {
+    s = s.split('.')[0];
+  }
+  return s;
+}
+
+/**
+ * Cleanly formats primary and all alternate mobile numbers together
+ */
+function formatContactNumbers(...phoneSources) {
+  const parts = [];
+  const seen = new Set();
+
+  phoneSources.forEach((source, sourceIdx) => {
+    if (!source) return;
+    const numbers = String(source).split(/[\/;,]+/).map(s => cleanPhone(s)).filter(Boolean);
+    numbers.forEach((num, subIdx) => {
+      const pureDigits = num.replace(/\D/g, '');
+      if (pureDigits.length >= 5 && !seen.has(pureDigits)) {
+        seen.add(pureDigits);
+        let prefix = 'Mob';
+        if (sourceIdx === 0 && subIdx === 0) prefix = 'Mob';
+        else if (sourceIdx === 0 && subIdx > 0) prefix = `Mob${subIdx + 1}`;
+        else if (sourceIdx === 1) prefix = subIdx === 0 ? 'Alt' : `Alt${subIdx + 1}`;
+        else prefix = `Alt${sourceIdx + subIdx}`;
+
+        parts.push(`${prefix}: ${num}`);
+      } else if (pureDigits.length < 5 && num && !seen.has(num)) {
+        seen.add(num);
+        parts.push(`Mob: ${num}`);
+      }
+    });
+  });
+
+  return parts.length ? parts.join('\n') : '';
+}
+
 /* ═══════════════════════════════════════════════
    6. FORMAT-SPECIFIC TABLE CONFIGURATION
    Tailored to produce the exact PDF matching
@@ -274,15 +322,13 @@ function getFormatConfig(format, usableWidth) {
         }
       },
       {
-        w: 34,
-        hdr: 'Contact Numbers',
+        w: 36,
+        hdr: 'Contact & Alt Mob',
         get: r => {
-          const mob = val(r, 'Contact Number', 'Mobile');
-          const alt = val(r, 'Alternate Mobile no', 'Alternate Mobile');
-          const parts = [];
-          if (mob) parts.push('Mob: ' + mob);
-          if (alt) parts.push('Alt: ' + alt);
-          return parts.join('\n');
+          const mob = val(r, 'Contact Number', 'Contact No', 'Contact No.', 'Customer Mobile', 'Mobile No', 'Mobile No.', 'Mobile Number', 'Mobile', 'Contact', 'Phone Number', 'Phone');
+          const alt = val(r, 'Alternate Mobile no', 'Alternate Mobile no.', 'Alternate Mobile number', 'Alternate Mobile', 'Alternate Mob', 'Alternate Mob no', 'Alt Mobile no', 'Alt Mobile no.', 'Alt Mobile', 'Alt Mob', 'Alternate Contact', 'Alt Contact', 'Alternate Number', 'Alt Number', 'Alt No', 'ALT/DATA MOB-1', 'ALT MOB-1');
+          const alt2 = val(r, 'Alternate Mobile no 2', 'Alternate Mobile 2', 'Alt Mobile 2', 'ALT/DATA MOB-2', 'ALT MOB-2');
+          return formatContactNumbers(mob, alt, alt2);
         }
       },
       {
@@ -368,27 +414,23 @@ function getFormatConfig(format, usableWidth) {
         }
       },
       {
-        w: 32,
-        hdr: 'Contact Numbers',
+        w: 34,
+        hdr: 'Contact & Alt Mob',
         get: r => {
-          const mob  = val(r, 'CONTACT', 'Contact');
-          const alt1 = val(r, 'ALT/DATA MOB-1', 'ALT MOB-1');
-          const alt2 = val(r, 'ALT/DATA MOB-2', 'ALT MOB-2');
-          const parts = [];
-          if (mob)  parts.push('Mob: ' + mob);
-          if (alt1) parts.push('Alt1: ' + alt1);
-          if (alt2) parts.push('Alt2: ' + alt2);
-          return parts.join('\n');
+          const mob  = val(r, 'CONTACT', 'Contact Number', 'Contact No', 'Customer Mobile', 'Mobile No', 'Mobile', 'Phone');
+          const alt1 = val(r, 'ALT/DATA MOB-1', 'ALT MOB-1', 'ALT/DATA MOB 1', 'Alternate Mobile no', 'Alternate Mobile', 'Alt Mobile');
+          const alt2 = val(r, 'ALT/DATA MOB-2', 'ALT MOB-2', 'ALT/DATA MOB 2', 'Alternate Mobile 2', 'Alt Mobile 2');
+          return formatContactNumbers(mob, alt1, alt2);
         }
       },
       {
         w: 36,
         hdr: 'References',
         get: r => {
-          const r1n = val(r, 'DATA/REF-1', 'REF-1');
-          const r1m = val(r, 'Reference-1 mobile no', 'REF-1 MOB');
-          const r2n = val(r, 'DATA/REF-2', 'REF-2');
-          const r2m = val(r, 'Reference-2 mobile no', 'REF-2 MOB');
+          const r1n = val(r, 'DATA/REF-1', 'REF-1', 'Reference 1');
+          const r1m = cleanPhone(val(r, 'Reference-1 mobile no', 'REF-1 MOB', 'Reference 1 Mobile'));
+          const r2n = val(r, 'DATA/REF-2', 'REF-2', 'Reference 2');
+          const r2m = cleanPhone(val(r, 'Reference-2 mobile no', 'REF-2 MOB', 'Reference 2 Mobile'));
           const parts = [];
           if (r1n || r1m) parts.push(`Ref1: ${r1n}${r1m ? ' (' + r1m + ')' : ''}`);
           if (r2n || r2m) parts.push(`Ref2: ${r2n}${r2m ? ' (' + r2m + ')' : ''}`);
@@ -733,10 +775,12 @@ function doSearch() {
     // Show all non-empty key-value pairs from the uploaded Excel row
     for (const [k, v] of Object.entries(match)) {
       if (v) {
+        const isPhone = /mobile|contact|phone|mob/i.test(k);
+        const displayVal = isPhone ? cleanPhone(v) : v;
         resultGrid.innerHTML += `
           <div class="r-item">
             <div class="r-lbl">${escapeHtml(k)}</div>
-            <div class="r-val">${escapeHtml(v)}</div>
+            <div class="r-val">${escapeHtml(displayVal)}</div>
           </div>`;
       }
     }
