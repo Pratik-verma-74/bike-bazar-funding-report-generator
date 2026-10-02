@@ -1,4 +1,4 @@
-const CACHE_NAME = 'recovery-pdf-v1';
+const CACHE_NAME = 'recovery-pdf-v2';
 
 self.addEventListener('install', event => {
   self.skipWaiting();
@@ -9,35 +9,49 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  const url = new URL(event.request.url);
-
-  // Intercept POST request from Web Share Target
-  if (event.request.method === 'POST' && event.request.url.startsWith(self.registration.scope)) {
+  // Intercept POST request from Web Share Target (WhatsApp / Telegram / Android Share)
+  if (event.request.method === 'POST') {
     event.respondWith((async () => {
       try {
         const formData = await event.request.formData();
-        const file = formData.get('file');
+        let file = formData.get('file');
 
-        if (file) {
+        // Fallback: Check if file was sent with any other parameter key
+        if (!file || typeof file === 'string') {
+          for (const [key, value] of formData.entries()) {
+            if (value && typeof value === 'object' && value.name) {
+              file = value;
+              break;
+            }
+          }
+        }
+
+        if (file && typeof file === 'object') {
           const cache = await caches.open('shared-file');
-          await cache.put(new Request('/shared-file'), new Response(file, {
+          const cacheResponse = new Response(file, {
             headers: {
               'Content-Type': file.type || 'application/octet-stream',
               'Content-Length': file.size,
-              'X-Filename': file.name || 'shared_file.xlsx'
+              'X-Filename': encodeURIComponent(file.name || 'whatsapp_data.xlsx')
             }
-          }));
+          });
+          await cache.put('shared-file-data', cacheResponse);
+          // Also cache under /shared-file for backward compatibility
+          try {
+            await cache.put(new Request('/shared-file'), cacheResponse.clone());
+          } catch (e) {}
+
           return Response.redirect('./?shared=true', 303);
         }
       } catch (err) {
-        console.error('Error handling share target:', err);
+        console.error('Error handling share target in SW:', err);
       }
       return Response.redirect('./', 303);
     })());
     return;
   }
 
-  // Normal fetch handling (basic offline caching)
+  // Normal fetch handling
   event.respondWith(
     caches.match(event.request).then(response => {
       return response || fetch(event.request);

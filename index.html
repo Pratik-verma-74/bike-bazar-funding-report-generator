@@ -15,14 +15,27 @@
   <header>
     <div class="header-inner">
       <div class="logo-mark">₹</div>
-      <div>
+      <div class="header-text">
         <h1>Loan Recovery PDF Converter</h1>
         <p class="subtitle">Upload Excel → Auto-map columns → Generate compact recovery sheet PDF</p>
+      </div>
+      <div class="header-actions">
+        <button id="installAppBtn" class="btn-top btn-install" title="Install on phone for WhatsApp Open With support">📲 Install App</button>
+        <button id="whatsappHelpBtn" class="btn-top btn-wa" title="WhatsApp Open Guide">💬 WhatsApp Open</button>
       </div>
     </div>
   </header>
 
   <main>
+
+    <!-- WhatsApp Direct Notice Banner -->
+    <div class="wa-banner">
+      <div class="wa-banner-left">
+        <span class="wa-icon">💬</span>
+        <span><strong>Direct WhatsApp Open:</strong> Excel save karne ki jaroorat nahi! App install karke WhatsApp se seedhe <em>Share → Recovery Converter</em> karein.</span>
+      </div>
+      <button class="wa-guide-btn" id="waGuideOpenBtn">Kaise Karein? (Guide)</button>
+    </div>
 
     <!-- STEP 1: Upload -->
     <section class="card" id="upload-section">
@@ -150,6 +163,43 @@
       </div>
 
       <p class="pay-disclaimer">Payment hone ke baad 'Payment Done' button par click karein, aapka PDF turant download ho jayega.</p>
+    </div>
+  </div>
+
+  <!-- WHATSAPP DIRECT OPEN GUIDE MODAL -->
+  <div id="whatsappModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <button class="modal-close" id="waModalCloseBtn" title="Close">✕</button>
+      
+      <div class="modal-header">
+        <div class="phonepe-badge" style="background: rgba(37, 211, 102, 0.2); border-color: #25d366; color: #25d366;">
+          <span>💬 WhatsApp Direct Open Feature</span>
+        </div>
+        <h3 style="color: #25d366;">WhatsApp se Seedhe Kaise Kholein?</h3>
+        <p class="modal-sub">Phone me Excel save karne ki jaroorat nahi padegi! Sirf 2 aasan steps:</p>
+      </div>
+
+      <div class="wa-steps-list">
+        <div class="wa-step-item">
+          <div class="wa-step-num">1</div>
+          <div class="wa-step-content">
+            <strong>App ko Phone me Install karein (Sirf 1 baar)</strong>
+            <p>Neeche <strong>'📲 Install App Now'</strong> button dabayein, ya Chrome ke 3 dots (⋮) par click karke <strong>'Add to Home screen'</strong> / <strong>'Install app'</strong> karein.</p>
+          </div>
+        </div>
+
+        <div class="wa-step-item">
+          <div class="wa-step-num">2</div>
+          <div class="wa-step-content">
+            <strong>WhatsApp me File Share / Open karein</strong>
+            <p>Jab bhi WhatsApp me Excel file aaye, uspar tap karein ya <strong>Share (शेयर)</strong> icon dabayein aur list me se <strong>Loan Recovery PDF Converter</strong> chunein. File turant bina save kiye khul jayegi!</p>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="waModalInstallBtn" style="background: #25d366; color: #0d1b2a; font-weight: 800;">
+        📲 Install App on This Phone Now
+      </button>
     </div>
   </div>
 

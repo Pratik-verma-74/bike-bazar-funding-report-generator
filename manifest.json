@@ -3,6 +3,7 @@
   "short_name": "RecoveryPDF",
   "description": "Convert Loan Excel sheets to PDF directly on your device",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0d1b2a",
   "theme_color": "#0d1b2a",
@@ -24,7 +25,17 @@
       "files": [
         {
           "name": "file",
-          "accept": [".csv", ".xls", ".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "text/csv"]
+          "accept": [
+            ".csv",
+            ".xls",
+            ".xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.ms-excel",
+            "text/csv",
+            "application/csv",
+            "text/plain",
+            "application/octet-stream"
+          ]
         }
       ]
     }
@@ -32,10 +43,21 @@
   "file_handlers": [
     {
       "action": "./",
+      "name": "Excel Spreadsheet",
+      "icons": [
+        {
+          "src": "icon.svg",
+          "sizes": "192x192 512x512",
+          "type": "image/svg+xml"
+        }
+      ],
       "accept": {
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
         "application/vnd.ms-excel": [".xls"],
-        "text/csv": [".csv"]
+        "text/csv": [".csv"],
+        "application/csv": [".csv"],
+        "text/plain": [".csv"],
+        "application/octet-stream": [".xlsx", ".xls", ".csv"]
       }
     }
   ]

@@ -1050,9 +1050,58 @@ function resetAll() {
 }
 
 /* ═══════════════════════════════════════════════
-   11. PWA & WEB SHARE TARGET / FILE HANDLING
+   12. PWA, WHATSAPP SHARE TARGET & INSTALL PROMPT
    ═══════════════════════════════════════════════ */
 
+let deferredInstallPrompt = null;
+const installAppBtn     = document.getElementById('installAppBtn');
+const whatsappHelpBtn   = document.getElementById('whatsappHelpBtn');
+const waGuideOpenBtn    = document.getElementById('waGuideOpenBtn');
+const whatsappModal     = document.getElementById('whatsappModal');
+const waModalCloseBtn   = document.getElementById('waModalCloseBtn');
+const waModalInstallBtn = document.getElementById('waModalInstallBtn');
+
+// Capture browser install prompt
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  if (installAppBtn) installAppBtn.style.display = 'inline-flex';
+});
+
+function triggerInstall() {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(choiceResult => {
+      if (choiceResult.outcome === 'accepted') {
+        console.log('PWA installation accepted');
+      }
+      deferredInstallPrompt = null;
+    });
+  } else {
+    alert("Phone me Install karne ke steps:\n1. Chrome browser me upar right side 3 dots (⋮) par click karein.\n2. 'Add to Home screen' (या 'Install app') par tap karein.\n\nEk baar install hote hi, WhatsApp me Excel file par tap karke Share dabane par ye app directly list me dikhai dega!");
+  }
+}
+
+if (installAppBtn) installAppBtn.addEventListener('click', triggerInstall);
+if (waModalInstallBtn) waModalInstallBtn.addEventListener('click', triggerInstall);
+
+// WhatsApp guide modal listeners
+function openWhatsAppModal() {
+  if (whatsappModal) whatsappModal.classList.remove('hidden');
+}
+function closeWhatsAppModal() {
+  if (whatsappModal) whatsappModal.classList.add('hidden');
+}
+if (whatsappHelpBtn) whatsappHelpBtn.addEventListener('click', openWhatsAppModal);
+if (waGuideOpenBtn) waGuideOpenBtn.addEventListener('click', openWhatsAppModal);
+if (waModalCloseBtn) waModalCloseBtn.addEventListener('click', closeWhatsAppModal);
+if (whatsappModal) {
+  whatsappModal.addEventListener('click', e => {
+    if (e.target === whatsappModal) closeWhatsAppModal();
+  });
+}
+
+// Service Worker Registration
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').then(reg => {
@@ -1074,24 +1123,26 @@ if ('launchQueue' in window) {
   });
 }
 
-// Check if app was launched via Share Target
+// Check if app was launched via WhatsApp / Android Share Target
 window.addEventListener('DOMContentLoaded', async () => {
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.has('shared')) {
     try {
       const cache = await caches.open('shared-file');
-      const response = await cache.match('/shared-file');
+      const response = (await cache.match('shared-file-data')) || (await cache.match('/shared-file'));
       if (response) {
         const blob = await response.blob();
-        const filename = response.headers.get('X-Filename') || 'shared_file.xlsx';
-        const file = new File([blob], filename, { type: blob.type });
+        let rawFilename = response.headers.get('X-Filename') || 'whatsapp_data.xlsx';
+        try { rawFilename = decodeURIComponent(rawFilename); } catch (e) {}
+        const file = new File([blob], rawFilename, { type: blob.type || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
         window.history.replaceState({}, document.title, window.location.pathname);
         handleFile(file);
+        await cache.delete('shared-file-data');
         await cache.delete('/shared-file');
       }
     } catch (err) {
-      console.error('Failed to load shared file:', err);
+      console.error('Failed to load shared file from WhatsApp:', err);
     }
   }
 });
