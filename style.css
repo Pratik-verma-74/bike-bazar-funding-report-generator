@@ -184,7 +184,34 @@ main {
   white-space: nowrap;
 }
 
-/* ── MAPPING GRID ── */
+/* ── MAPPING GRID & FORMAT BADGE ── */
+.format-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: .82rem;
+  margin-bottom: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+}
+.format-badge.fmt-1 {
+  background: rgba(74, 222, 128, 0.12);
+  border-color: rgba(74, 222, 128, 0.4);
+  color: #4ade80;
+}
+.format-badge.fmt-2 {
+  background: rgba(96, 165, 250, 0.12);
+  border-color: rgba(96, 165, 250, 0.4);
+  color: #60a5fa;
+}
+.format-badge.fmt-custom {
+  background: rgba(232, 162, 23, 0.12);
+  border-color: rgba(232, 162, 23, 0.4);
+  color: var(--gold2);
+}
+
 .map-note {
   font-size: .78rem;
   color: var(--muted);
@@ -194,27 +221,69 @@ main {
 
 .mapping-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
 }
 .map-item {
   background: rgba(255,255,255,.03);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 10px 12px;
   font-size: .78rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color .2s;
+}
+.map-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 .map-field {
   font-weight: 700;
   color: var(--text);
-  margin-bottom: 3px;
+}
+.req-tag {
+  font-size: .65rem;
+  color: var(--gold);
+  background: rgba(232, 162, 23, 0.15);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.opt-tag {
+  font-size: .65rem;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1px 6px;
+  border-radius: 4px;
 }
 .map-source {
-  color: var(--muted);
   font-size: .72rem;
+  font-weight: 500;
 }
+.map-item.found { border-color: rgba(74, 222, 128, 0.35); }
 .map-item.found .map-source { color: var(--green); }
+.map-item.optional { border-color: rgba(96, 165, 250, 0.25); }
+.map-item.optional .map-source { color: #60a5fa; }
+.map-item.missing { border-color: rgba(224, 92, 92, 0.4); }
 .map-item.missing .map-source { color: var(--red); }
+
+.map-select {
+  width: 100%;
+  padding: 5px 8px;
+  background: rgba(13, 27, 42, 0.8);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: .72rem;
+  cursor: pointer;
+  outline: none;
+}
+.map-select:focus {
+  border-color: var(--gold);
+}
 
 /* ── STATS ── */
 .gen-row {
