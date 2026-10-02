@@ -572,7 +572,7 @@ function renderFormatPreview(format, headers) {
 
 generateBtn.addEventListener('click', () => {
   if (!parsedRows.length) return;
-  generatePDF();
+  openPaymentModal('BATCH');
 });
 
 async function generatePDF() {
@@ -793,7 +793,7 @@ function doSearch() {
 
 downloadSingleBtn.addEventListener('click', () => {
   if (currentFoundRow) {
-    generateSinglePDF(currentFoundRow);
+    openPaymentModal('SINGLE');
   }
 });
 
@@ -888,7 +888,96 @@ function generateSinglePDF(row) {
 }
 
 /* ═══════════════════════════════════════════════
-   10. HELPERS
+   10. PHONEPE & UPI PAYMENT INTEGRATION
+   PhonePe Number: 7463053829
+   Single PDF: ₹10
+   All / Batch PDF: ₹50
+   ═══════════════════════════════════════════════ */
+
+const PAYMENT_CONFIG = {
+  phone: '7463053829',
+  upiId: '7463053829@ybl',
+  payeeName: 'Pratik Verma',
+  singleFee: 10,
+  allFee: 50,
+};
+
+const paymentModal      = document.getElementById('paymentModal');
+const modalCloseBtn     = document.getElementById('modalCloseBtn');
+const modalTitle        = document.getElementById('modalTitle');
+const modalSub          = document.getElementById('modalSub');
+const modalAmount       = document.getElementById('modalAmount');
+const upiQrImg          = document.getElementById('upiQrImg');
+const copyPhoneBtn      = document.getElementById('copyPhoneBtn');
+const copyUpiBtn        = document.getElementById('copyUpiBtn');
+const payAppBtn         = document.getElementById('payAppBtn');
+const confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
+
+let pendingAction = null; // 'SINGLE' | 'BATCH'
+
+function openPaymentModal(actionType) {
+  pendingAction = actionType;
+  const isSingle = actionType === 'SINGLE';
+  const amount = isSingle ? PAYMENT_CONFIG.singleFee : PAYMENT_CONFIG.allFee;
+  const itemTitle = isSingle ? 'Single Customer Record PDF' : 'All Recovery Sheets (Batch ZIP/PDF)';
+
+  modalAmount.textContent = `₹${amount}`;
+  modalTitle.textContent = isSingle ? `Pay ₹${amount} for Single Record PDF` : `Pay ₹${amount} for All Records (ZIP)`;
+  modalSub.textContent = `Pay securely using PhonePe, Google Pay, Paytm, or any UPI app to download ${itemTitle}`;
+
+  // Standard UPI URI protocol
+  const note = isSingle ? 'Single Record Recovery PDF' : 'Recovery Sheets Batch PDF';
+  const upiUrl = `upi://pay?pa=${encodeURIComponent(PAYMENT_CONFIG.upiId)}&pn=${encodeURIComponent(PAYMENT_CONFIG.payeeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
+
+  // Set direct UPI intent link
+  payAppBtn.href = upiUrl;
+
+  // Set high-res QR code
+  upiQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=4&data=${encodeURIComponent(upiUrl)}`;
+
+  // Open modal
+  paymentModal.classList.remove('hidden');
+}
+
+function closePaymentModal() {
+  paymentModal.classList.add('hidden');
+  pendingAction = null;
+}
+
+modalCloseBtn.addEventListener('click', closePaymentModal);
+paymentModal.addEventListener('click', e => {
+  if (e.target === paymentModal) closePaymentModal();
+});
+
+// Copy helpers with visual feedback
+copyPhoneBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText(PAYMENT_CONFIG.phone).then(() => {
+    copyPhoneBtn.textContent = '✓ Copied!';
+    setTimeout(() => { copyPhoneBtn.textContent = '📋 Copy'; }, 2000);
+  });
+});
+
+copyUpiBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText(PAYMENT_CONFIG.upiId).then(() => {
+    copyUpiBtn.textContent = '✓ Copied!';
+    setTimeout(() => { copyUpiBtn.textContent = '📋 Copy'; }, 2000);
+  });
+});
+
+// When user confirms payment done
+confirmPaymentBtn.addEventListener('click', () => {
+  const action = pendingAction;
+  closePaymentModal();
+
+  if (action === 'SINGLE' && currentFoundRow) {
+    generateSinglePDF(currentFoundRow);
+  } else if (action === 'BATCH') {
+    generatePDF();
+  }
+});
+
+/* ═══════════════════════════════════════════════
+   11. HELPERS
    ═══════════════════════════════════════════════ */
 
 function escapeHtml(str) {

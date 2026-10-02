@@ -62,7 +62,7 @@
       
       <div id="searchResult" class="result-card hidden">
         <div class="result-grid" id="resultGrid"></div>
-        <button class="btn btn-primary" id="downloadSingleBtn">⬇ Download This Record (PDF)</button>
+        <button class="btn btn-primary" id="downloadSingleBtn">⬇ Download This Record (PDF) — ₹10</button>
       </div>
     </section>
 
@@ -89,7 +89,7 @@
       </div>
 
       <button class="btn btn-primary" id="generateBtn">
-        <span id="genBtnText">⬇ Generate &amp; Download PDF</span>
+        <span id="genBtnText">⬇ Generate &amp; Download PDF — ₹50</span>
         <div class="spinner hidden" id="spinner"></div>
       </button>
 
@@ -100,6 +100,58 @@
     </section>
 
   </main>
+
+  <!-- PAYMENT MODAL (PhonePe / UPI) -->
+  <div id="paymentModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <button class="modal-close" id="modalCloseBtn" title="Close">✕</button>
+      
+      <div class="modal-header">
+        <div class="phonepe-badge">
+          <span>💜 PhonePe / UPI Payment</span>
+        </div>
+        <h3 id="modalTitle">Scan &amp; Pay to Download PDF</h3>
+        <p class="modal-sub" id="modalSub">Pay securely using PhonePe, Google Pay, Paytm or any UPI app</p>
+      </div>
+
+      <div class="payment-amount-box">
+        <span class="pay-lbl">Payable Amount</span>
+        <span class="pay-val" id="modalAmount">₹10</span>
+      </div>
+
+      <div class="qr-container">
+        <div class="qr-box">
+          <img id="upiQrImg" class="qr-image" alt="UPI QR Code" src="" />
+        </div>
+        <p class="qr-note">Scan with <strong>PhonePe</strong> / <strong>Google Pay</strong> / <strong>Paytm</strong></p>
+      </div>
+
+      <div class="upi-details-card">
+        <div class="upi-detail-row">
+          <span class="ud-lbl">PhonePe No:</span>
+          <span class="ud-val"><strong>7463053829</strong></span>
+          <button class="btn-copy" id="copyPhoneBtn" title="Copy Number">📋 Copy</button>
+        </div>
+        <div class="upi-detail-row">
+          <span class="ud-lbl">UPI ID:</span>
+          <span class="ud-val" id="upiIdText">7463053829@ybl</span>
+          <button class="btn-copy" id="copyUpiBtn" title="Copy UPI ID">📋 Copy</button>
+        </div>
+      </div>
+
+      <a id="payAppBtn" href="#" class="btn btn-upi">
+        📱 Open PhonePe / UPI App Directly
+      </a>
+
+      <div class="payment-actions">
+        <button class="btn btn-primary btn-confirm" id="confirmPaymentBtn">
+          ✅ Payment Done — Download PDF Now
+        </button>
+      </div>
+
+      <p class="pay-disclaimer">Payment hone ke baad 'Payment Done' button par click karein, aapka PDF turant download ho jayega.</p>
+    </div>
+  </div>
 
   <footer>
     <span>Loan Recovery PDF Converter &copy; 2026</span>

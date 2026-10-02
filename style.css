@@ -423,6 +423,207 @@ footer {
   color: var(--muted);
 }
 
+/* ── PAYMENT MODAL (PhonePe & UPI) ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 12, 20, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: modalFadeIn .25s ease-out;
+}
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.modal-card {
+  position: relative;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 24px 26px;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.65);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: rgba(255,255,255,0.06);
+  border: none;
+  color: var(--muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .15s;
+}
+.modal-close:hover {
+  background: rgba(224, 92, 92, 0.2);
+  color: var(--red);
+}
+
+.phonepe-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  background: rgba(95, 37, 159, 0.25);
+  border: 1px solid #7c3aed;
+  border-radius: 20px;
+  font-size: .78rem;
+  font-weight: 700;
+  color: #c4b5fd;
+  margin-bottom: 6px;
+}
+
+.modal-header h3 {
+  font-size: 1.2rem;
+  color: var(--gold2);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.modal-sub {
+  font-size: .78rem;
+  color: var(--muted);
+}
+
+.payment-amount-box {
+  background: rgba(232, 162, 23, 0.08);
+  border: 1.5px dashed var(--gold);
+  border-radius: 10px;
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.pay-lbl {
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.pay-val {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--gold2);
+}
+
+.qr-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.qr-box {
+  background: #ffffff;
+  padding: 10px;
+  border-radius: 10px;
+  display: inline-block;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+.qr-image {
+  width: 175px;
+  height: 175px;
+  display: block;
+}
+.qr-note {
+  font-size: .75rem;
+  color: var(--muted);
+}
+
+.upi-details-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+.upi-detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: .8rem;
+  gap: 8px;
+}
+.ud-lbl {
+  color: var(--muted);
+  min-width: 85px;
+}
+.ud-val {
+  color: var(--text);
+  font-weight: 600;
+  flex: 1;
+  font-family: monospace;
+  font-size: .85rem;
+}
+.btn-copy {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--gold);
+  font-size: .68rem;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.btn-copy:hover {
+  background: var(--gold);
+  color: var(--navy);
+}
+
+.btn-upi {
+  background: linear-gradient(135deg, #5f259f, #7c3aed);
+  color: #ffffff !important;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: .92rem;
+  padding: 11px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(95, 37, 159, 0.4);
+  transition: transform .15s, filter .15s;
+}
+.btn-upi:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
+.btn-confirm {
+  background: var(--gold);
+  color: var(--navy);
+  font-size: 1rem;
+  font-weight: 800;
+  padding: 12px 16px;
+  width: 100%;
+}
+
+.pay-disclaimer {
+  font-size: .7rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
 /* ── RESPONSIVE ── */
 @media (max-width: 560px) {
   .gen-row { flex-direction: column; }
@@ -433,4 +634,5 @@ footer {
   .header-inner { flex-direction: column; text-align: center; }
   .logo-mark { margin-bottom: 8px; }
   .drop-zone { padding: 24px 16px; }
+  .modal-card { padding: 20px 16px; }
 }
