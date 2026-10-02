@@ -740,6 +740,48 @@ footer {
   line-height: 1.35;
 }
 
+/* ── DIRECT TOAST & PAYMENT BADGE ── */
+.pay-tag-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .78rem;
+  color: #c4b5fd;
+  background: rgba(95, 37, 159, 0.2);
+  border: 1px solid rgba(124, 58, 237, 0.35);
+  border-radius: 6px;
+  padding: 5px 12px;
+  margin-top: 8px;
+  width: fit-content;
+}
+
+.direct-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: #1e1136;
+  color: #f3e8ff;
+  border: 1.5px solid #a855f7;
+  padding: 12px 22px;
+  border-radius: 30px;
+  font-size: .88rem;
+  font-weight: 600;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  z-index: 999999;
+  opacity: 0;
+  pointer-events: none;
+  transition: all .3s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  max-width: 90vw;
+  text-align: center;
+}
+
+.direct-toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
 /* ── RESPONSIVE ── */
 @media (max-width: 560px) {
   .gen-row { flex-direction: column; }
