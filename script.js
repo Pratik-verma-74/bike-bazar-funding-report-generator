@@ -1,184 +1,26 @@
 /**
  * Loan Recovery PDF Converter — script.js
  * ================================================
- * Libraries expected (loaded in index.html):
- *   XLSX (SheetJS)  — Excel parsing
- *   jsPDF           — PDF generation
- *   jspdf-autotable — Table plugin for jsPDF
- *   JSZip           — ZIP packaging
- *   FileSaver       — File download helper
+ * Generates custom, tailored recovery sheet PDFs
+ * based strictly on the uploaded Excel file's format.
+ *
+ * Supported Modes:
+ *   1. Format 1: Bike Bazar Standard Format (22 columns)
+ *   2. Format 2: DMA / Agency Recovery Sheet (30 columns)
+ *   3. Dynamic:  Any other custom Excel file (all columns rendered)
  * ================================================
  */
 
 /* ═══════════════════════════════════════════════
-   1. COLUMN MAPPING CONFIGURATION
-   Supports Format 1 (Standard Bike Bazar) and
-   Format 2 (DMA / Agency Sheet) seamlessly.
+   1. STATE
    ═══════════════════════════════════════════════ */
-
-const FIELD_DEFS = [
-  {
-    key: 'loanNo',
-    label: 'Loan No',
-    required: true,
-    aliases: ['loan no', 'loan number', 'loan num', 'loan_no', 'loanno', 'loan account', 'account no', 'account number', 'lan', 'agreement no', 'loan no.'],
-  },
-  {
-    key: 'customerName',
-    label: 'Customer Name',
-    required: true,
-    aliases: ['customer name', 'customer', 'cust name', 'borrower', 'borrower name', 'applicant name', 'client name', 'name'],
-  },
-  {
-    key: 'emi',
-    label: 'EMI',
-    required: true,
-    aliases: ['emi', 'emi amount', 'monthly emi', 'instalment', 'installment', 'installment amount'],
-  },
-  {
-    key: 'bkt',
-    label: 'BKT',
-    required: true,
-    aliases: ['bkt', 'opening bkt - 7+', 'opening bkt', 'bucket', 'opening bucket', 'dpd bucket', 'bucket no', 'curr bkt'],
-  },
-  {
-    key: 'pos',
-    label: 'POS',
-    required: true,
-    aliases: ['total pos', 'pos', 'principal outstanding', 'total pos amount', 'pos amount', 'pos amt'],
-  },
-  {
-    key: 'openingOD',
-    label: 'Opening OD',
-    required: true,
-    aliases: ['opening od', 'opnig od', 'opning od', 'open od', 'opn od', 'opning o', 'opening overdue'],
-  },
-  {
-    key: 'totalOD',
-    label: 'Total OD',
-    required: true,
-    aliases: ['total od', 'totl od', 'tot od', 'total overdue', 'od amount', 'od amt'],
-  },
-  {
-    key: 'piDues',
-    label: 'PI Dues',
-    required: false,
-    aliases: ['pi dues', 'total pi', 'opening pi', 'pidues', 'pi due', 'pi amt', 'pi amount', 'pi charge', 'pi charges'],
-  },
-  {
-    key: 'address',
-    label: 'Address',
-    required: true,
-    aliases: ['permanent address', 'permnt add', 'current address', 'perm address', 'customer address', 'residential address', 'residence address', 'address', 'addr'],
-  },
-  {
-    key: 'pinCode',
-    label: 'Pin Code',
-    required: false,
-    aliases: ['pin code', 'pincode', 'pin', 'postal code', 'zip code'],
-  },
-  {
-    key: 'mobile',
-    label: 'Mobile',
-    required: true,
-    aliases: ['contact number', 'contact no', 'contact', 'customer mobile', 'mobile no', 'mobile number', 'mobile', 'phone no', 'phone', 'mob no', 'primary contact'],
-  },
-  {
-    key: 'altMobile',
-    label: 'Alt Mobile',
-    required: false,
-    aliases: ['alternate mobile no', 'alternate mobile number', 'alt/data mob-1', 'alternate mobile', 'alt mobile', 'alt contact', 'alternate num', 'alt mob 1'],
-  },
-  {
-    key: 'altMobile2',
-    label: 'Alt Mobile 2',
-    required: false,
-    aliases: ['alt/data mob-2', 'alt mobile 2', 'alternate mobile 2', 'alt mob 2'],
-  },
-  {
-    key: 'ref1Name',
-    label: 'Ref1 Name',
-    required: false,
-    aliases: ['data/ref-1', 'data / ref-1', 'reference-1', 'reference 1', 'ref1 name', 'ref 1 name', 'ref 1', 'reference1', 'ref1', 'guarantor 1'],
-  },
-  {
-    key: 'ref1Mobile',
-    label: 'Ref1 Mobile',
-    required: false,
-    aliases: ['reference-1 mobile no', 'reference 1 mobile no', 'reference 1 mobile', 'ref1 mobile', 'ref 1 mobile', 'ref-1 mobile', 'ref1mobile', 'guarantor 1 mobile'],
-  },
-  {
-    key: 'ref2Name',
-    label: 'Ref2 Name',
-    required: false,
-    aliases: ['data/ref-2', 'data / ref-2', 'reference-2', 'reference 2', 'ref2 name', 'ref 2 name', 'ref 2', 'reference2', 'ref2', 'guarantor 2'],
-  },
-  {
-    key: 'ref2Mobile',
-    label: 'Ref2 Mobile',
-    required: false,
-    aliases: ['reference-2 mobile no', 'reference 2 mobile no', 'reference 2 mobile', 'ref2 mobile', 'ref 2 mobile', 'ref-2 mobile', 'ref2mobile', 'guarantor 2 mobile'],
-  },
-  {
-    key: 'regNo',
-    label: 'Reg No',
-    required: true,
-    aliases: ['reg no', 'registration no', 'registration number', 'vehicle no', 'vehicle number', 'vehicle no.', 'reg_no', 'reg. no.', 'rc no', 'veh no'],
-  },
-  {
-    key: 'make',
-    label: 'Make',
-    required: true,
-    aliases: ['make', 'vehicle make', 'asset make', 'make name', 'vehicle model', 'model', 'vehicle'],
-  },
-  {
-    key: 'chassisNo',
-    label: 'Chassis No',
-    required: false,
-    aliases: ['chassis no', 'chassis no.', 'chassis number', 'chassis', 'vin'],
-  },
-  {
-    key: 'engineNo',
-    label: 'Engine No',
-    required: false,
-    aliases: ['engine no', 'engine no.', 'engine number', 'engine'],
-  },
-  {
-    key: 'mfgYr',
-    label: 'Mfg Year',
-    required: false,
-    aliases: ['mfg yr', 'mfg year', 'manufacturing year', 'model year', 'year'],
-  },
-  {
-    key: 'dealerName',
-    label: 'DLR Name',
-    required: true,
-    aliases: ['dealer name', 'dealer', 'dlr name', 'showroom', 'showroom name', 'dealer/showroom', 'dlr'],
-  },
-  {
-    key: 'agencyName',
-    label: 'Agency Name',
-    required: true,
-    aliases: ['agency/dma name', 'agency/dma', 'agency name', 'dma name', 'dma/dma name', 'agency', 'dma'],
-  },
-  {
-    key: 'tcmName',
-    label: 'TCM Name',
-    required: false,
-    aliases: ['tcm name', 'tcm', 'telecaller', 'telecaller name'],
-  },
-];
-
-/* ═══════════════════════════════════════════════
-   2. STATE
-   ═══════════════════════════════════════════════ */
-let parsedRows = [];        // Raw data rows from Excel
-let mappedKeys = {};        // { fieldKey: excelColumnName }
-let currentExcelCols = [];  // Array of column header strings from current file
+let parsedRows = [];        // Clean data rows
+let currentHeaders = [];    // Raw headers from uploaded Excel
+let detectedFormat = null;  // 'FORMAT_1' | 'FORMAT_2' | 'DYNAMIC'
 let currentFoundRow = null; // Currently matched search row
 
 /* ═══════════════════════════════════════════════
-   3. DOM REFERENCES
+   2. DOM REFERENCES
    ═══════════════════════════════════════════════ */
 const dropZone          = document.getElementById('dropZone');
 const fileInput         = document.getElementById('fileInput');
@@ -187,6 +29,7 @@ const fileNameEl        = document.getElementById('fileName');
 const recordCountEl     = document.getElementById('recordCount');
 const clearFileBtn      = document.getElementById('clearFile');
 const mappingSection    = document.getElementById('mapping-section');
+const formatBadge       = document.getElementById('formatBadge');
 const mappingGrid       = document.getElementById('mappingGrid');
 const searchSection     = document.getElementById('search-section');
 const searchInput       = document.getElementById('searchInput');
@@ -199,6 +42,7 @@ const generateSection   = document.getElementById('generate-section');
 const agencySelect      = document.getElementById('agencySelect');
 const statRecords       = document.getElementById('statRecords');
 const statPages         = document.getElementById('statPages');
+const statCols          = document.getElementById('statCols');
 const generateBtn       = document.getElementById('generateBtn');
 const genBtnText        = document.getElementById('genBtnText');
 const spinner           = document.getElementById('spinner');
@@ -207,7 +51,7 @@ const progressFill      = document.getElementById('progressFill');
 const progressLabel     = document.getElementById('progressLabel');
 
 /* ═══════════════════════════════════════════════
-   4. DRAG & DROP / FILE INPUT
+   3. DRAG & DROP / FILE INPUT
    ═══════════════════════════════════════════════ */
 
 dropZone.addEventListener('dragover', e => {
@@ -230,7 +74,7 @@ fileInput.addEventListener('change', () => {
 clearFileBtn.addEventListener('click', resetAll);
 
 /* ═══════════════════════════════════════════════
-   5. FILE HANDLER
+   4. FILE HANDLER
    ═══════════════════════════════════════════════ */
 
 function handleFile(file) {
@@ -254,7 +98,7 @@ function handleFile(file) {
         return;
       }
 
-      // Detect header row index (scanning first 5 rows for standard keywords)
+      // Auto-detect header row index (scanning first 5 rows)
       let headerRowIndex = 0;
       for (let i = 0; i < Math.min(5, rawRows.length); i++) {
         const rowStr = rawRows[i].map(c => String(c).toLowerCase()).join(' ');
@@ -310,16 +154,16 @@ function handleFile(file) {
       }
 
       parsedRows = rows;
-      currentExcelCols = cleanHeaders;
-      mappedKeys = autoMapColumns(cleanHeaders);
+      currentHeaders = cleanHeaders;
+      detectedFormat = identifyFormat(cleanHeaders);
 
       // Show file info
       fileNameEl.textContent = file.name;
       recordCountEl.textContent = `${rows.length.toLocaleString()} records`;
       fileInfo.classList.remove('hidden');
 
-      // Render Mapping Grid
-      renderMappingGrid(mappedKeys, currentExcelCols);
+      // Render format preview
+      renderFormatPreview(detectedFormat, cleanHeaders);
 
       // Populate Agency Dropdown & Stats
       refreshAgenciesAndStats();
@@ -339,276 +183,349 @@ function handleFile(file) {
 }
 
 /* ═══════════════════════════════════════════════
-   6. INTELLIGENT COLUMN MAPPING ENGINE
-   - Multi-pass precision matching
-   - Disambiguates Make vs Reg No vs Chassis No
-   - Reserves matched columns so they aren't stolen
+   5. FORMAT DETECTION ENGINE
    ═══════════════════════════════════════════════ */
 
 function normalize(s) {
   return String(s || '').toLowerCase().replace(/[\s_\-\.\/]+/g, ' ').trim();
 }
 
-function autoMapColumns(excelCols) {
-  const result = {};
-  const usedCols = new Set();
+function identifyFormat(headers) {
+  const norm = headers.map(h => normalize(h));
+  const has = keyword => norm.some(h => h.includes(keyword));
 
-  // Pass 1: Exact matches first
-  for (const def of FIELD_DEFS) {
-    for (const alias of def.aliases) {
-      const a = normalize(alias);
-      const exact = excelCols.find(c => !usedCols.has(c) && normalize(c) === a);
-      if (exact) {
-        result[def.key] = exact;
-        usedCols.add(exact);
-        break;
+  // Format 1 identifiers: 'opening bkt', 'total pos', 'vehicle no', 'alternate mobile'
+  const isF1 = has('total pos') || has('opening bkt') || has('alternate mobile');
+
+  // Format 2 identifiers: 'ref 1', 'ref1', 'alt/data mob', 'dma/dma name', 'agency/dma', 'opnig od', 'totl od'
+  const isF2 = has('ref 1') || has('ref1') || has('alt/data') || has('agency/dma') || has('opnig od') || has('totl od');
+
+  if (isF1 && !has('ref 1') && !has('ref1')) return 'FORMAT_1';
+  if (isF2) return 'FORMAT_2';
+  return 'DYNAMIC';
+}
+
+/**
+ * Robust case-insensitive lookup helper from row object
+ */
+function val(row, ...keys) {
+  if (!row) return '';
+  for (const k of keys) {
+    if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') {
+      return String(row[k]).trim();
+    }
+    const normK = normalize(k);
+    for (const [col, v] of Object.entries(row)) {
+      if (normalize(col) === normK && v !== undefined && v !== null && String(v).trim() !== '') {
+        return String(v).trim();
       }
     }
   }
-
-  // Pass 2: Partial matches with boundary and collision guards
-  for (const def of FIELD_DEFS) {
-    if (result[def.key]) continue;
-    let bestCol = null;
-    let bestScore = 0;
-
-    for (const alias of def.aliases) {
-      const a = normalize(alias);
-      for (const col of excelCols) {
-        if (usedCols.has(col)) continue;
-        const normCol = normalize(col);
-
-        // Guard: Prevent 'make' from grabbing 'vehicle no' or 'vehicle number'
-        if (def.key === 'make' && (normCol.includes('no') || normCol.includes('num'))) continue;
-        // Guard: Prevent 'customerName' from grabbing other names (agency name, dealer name, etc.)
-        if (def.key === 'customerName' && (normCol.includes('agency') || normCol.includes('dealer') || normCol.includes('dlr') || normCol.includes('tcm') || normCol.includes('ref'))) continue;
-        // Guard: 'bkt' must relate to bucket
-        if (def.key === 'bkt' && !normCol.includes('bkt') && !normCol.includes('bucket')) continue;
-        // Guard: 'address' shouldn't match IP or email address
-        if (def.key === 'address' && (normCol.includes('ip') || normCol.includes('email') || normCol.includes('mail'))) continue;
-
-        if (normCol === a) {
-          if (1000 > bestScore) { bestScore = 1000; bestCol = col; }
-        } else if (normCol.startsWith(a) || normCol.endsWith(a)) {
-          if (500 > bestScore) { bestScore = 500; bestCol = col; }
-        } else if (normCol.includes(a)) {
-          const score = 100 + a.length;
-          if (score > bestScore) { bestScore = score; bestCol = col; }
-        } else if (a.includes(normCol) && normCol.length >= 4) {
-          const score = 50 + normCol.length;
-          if (score > bestScore) { bestScore = score; bestCol = col; }
-        }
-      }
-    }
-    if (bestCol) {
-      result[def.key] = bestCol;
-      usedCols.add(bestCol);
-    }
-  }
-
-  return result;
+  return '';
 }
 
 /* ═══════════════════════════════════════════════
-   7. MAPPING PREVIEW GRID & USER OVERRIDE
+   6. FORMAT-SPECIFIC TABLE CONFIGURATION
+   Tailored to produce the exact PDF matching
+   whichever Excel is uploaded.
    ═══════════════════════════════════════════════ */
 
-function renderMappingGrid(map, excelCols) {
+function getFormatConfig(format, usableWidth) {
+  if (format === 'FORMAT_1') {
+    // ── FORMAT 1: Bike Bazar Standard (22 Excel columns accommodated in 12 PDF columns) ──
+    const COLS = [
+      { w: 22, hdr: 'Loan Number', get: r => val(r, 'Loan Number', 'Loan No', 'Loan_No') },
+      { w: 24, hdr: 'Customer Name', get: r => val(r, 'Customer Name', 'Customer') },
+      { w: 7,  hdr: 'BKT', get: r => val(r, 'Opening Bkt - 7+', 'Opening Bkt', 'BKT') },
+      { w: 12, hdr: 'Total POS', get: r => val(r, 'Total POS', 'POS') },
+      {
+        w: 14,
+        hdr: 'OD Details',
+        get: r => {
+          const opn = val(r, 'Opening OD');
+          const tot = val(r, 'Total OD');
+          const parts = [];
+          if (opn) parts.push('Opn: ' + opn);
+          if (tot) parts.push('Tot: ' + tot);
+          return parts.join('\n');
+        }
+      },
+      {
+        w: 12,
+        hdr: 'PI Details',
+        get: r => {
+          const opn = val(r, 'Opening PI');
+          const tot = val(r, 'Total PI');
+          const parts = [];
+          if (opn) parts.push('Opn: ' + opn);
+          if (tot) parts.push('Tot: ' + tot);
+          return parts.join('\n');
+        }
+      },
+      { w: 9, hdr: 'EMI', get: r => val(r, 'EMI') },
+      {
+        w: 42,
+        hdr: 'Current Address',
+        get: r => {
+          const addr = val(r, 'Current Address', 'Address');
+          const pin = val(r, 'Pin Code', 'Pincode');
+          if (pin && !addr.includes(pin)) return addr ? `${addr}\nPIN: ${pin}` : `PIN: ${pin}`;
+          return addr;
+        }
+      },
+      {
+        w: 34,
+        hdr: 'Contact Numbers',
+        get: r => {
+          const mob = val(r, 'Contact Number', 'Mobile');
+          const alt = val(r, 'Alternate Mobile no', 'Alternate Mobile');
+          const parts = [];
+          if (mob) parts.push('Mob: ' + mob);
+          if (alt) parts.push('Alt: ' + alt);
+          return parts.join('\n');
+        }
+      },
+      {
+        w: 16,
+        hdr: 'Make / Year',
+        get: r => {
+          const mk = val(r, 'Vehicle', 'Make');
+          const yr = val(r, 'Mfg Yr', 'Year');
+          return yr ? `${mk}\nYr: ${yr}` : mk;
+        }
+      },
+      {
+        w: 24,
+        hdr: 'Vehicle / Assets',
+        get: r => {
+          const reg = val(r, 'Vehicle No', 'Reg No');
+          const ch  = val(r, 'Chassis No.', 'Chassis No');
+          const eng = val(r, 'Engine No.', 'Engine No');
+          const parts = [];
+          if (reg) parts.push(reg);
+          if (ch)  parts.push('Ch: ' + ch);
+          if (eng) parts.push('Eng: ' + eng);
+          return parts.join('\n');
+        }
+      },
+      {
+        w: 24,
+        hdr: 'Dealer / TCM',
+        get: r => {
+          const dlr  = val(r, 'Dealer Name', 'Dealer');
+          const cost = val(r, 'Dealer Cost', 'Dealer Code');
+          const tcm  = val(r, 'TCM NAME', 'TCM');
+          const parts = [];
+          if (dlr)  parts.push(dlr);
+          if (cost) parts.push('Cost: ' + cost);
+          if (tcm)  parts.push('TCM: ' + tcm);
+          return parts.join('\n');
+        }
+      },
+    ];
+
+    const totalDefined = COLS.reduce((s, c) => s + c.w, 0);
+    const scale = usableWidth / totalDefined;
+    COLS.forEach(c => c.w = c.w * scale);
+
+    return {
+      name: 'Format 1 (Bike Bazar Standard)',
+      agencyHeader: 'Agency Name',
+      getAgency: r => val(r, 'AGENCY NAME', 'Agency Name', 'Agency'),
+      cols: COLS,
+      fieldCount: 22
+    };
+
+  } else if (format === 'FORMAT_2') {
+    // ── FORMAT 2: DMA / Agency Sheet (30 Excel columns accommodated in 13 PDF columns) ──
+    const COLS = [
+      { w: 20, hdr: 'Loan No', get: r => val(r, 'LOAN NO', 'Loan No') },
+      { w: 22, hdr: 'Customer Name', get: r => val(r, 'CUSTOMER', 'Customer Name') },
+      { w: 6,  hdr: 'BKT', get: r => val(r, 'BKT') },
+      { w: 11, hdr: 'POS', get: r => val(r, 'POS') },
+      {
+        w: 13,
+        hdr: 'OD Details',
+        get: r => {
+          const opn = val(r, 'OPNIG OD', 'Opening OD');
+          const tot = val(r, 'TOTL OD', 'Total OD');
+          const parts = [];
+          if (opn) parts.push('Opn: ' + opn);
+          if (tot) parts.push('Tot: ' + tot);
+          return parts.join('\n');
+        }
+      },
+      { w: 9, hdr: 'PI Dues', get: r => val(r, 'PI DUES', 'PI Due') },
+      { w: 8, hdr: 'EMI', get: r => val(r, 'EMI AMOUNT', 'EMI') },
+      {
+        w: 38,
+        hdr: 'Permanent Address',
+        get: r => {
+          const addr = val(r, 'PERMNT ADD', 'Permanent Address', 'Address');
+          const pin = val(r, 'PIN CODE', 'Pin Code');
+          if (pin && !addr.includes(pin)) return addr ? `${addr}\nPIN: ${pin}` : `PIN: ${pin}`;
+          return addr;
+        }
+      },
+      {
+        w: 32,
+        hdr: 'Contact Numbers',
+        get: r => {
+          const mob  = val(r, 'CONTACT', 'Contact');
+          const alt1 = val(r, 'ALT/DATA MOB-1', 'ALT MOB-1');
+          const alt2 = val(r, 'ALT/DATA MOB-2', 'ALT MOB-2');
+          const parts = [];
+          if (mob)  parts.push('Mob: ' + mob);
+          if (alt1) parts.push('Alt1: ' + alt1);
+          if (alt2) parts.push('Alt2: ' + alt2);
+          return parts.join('\n');
+        }
+      },
+      {
+        w: 36,
+        hdr: 'References',
+        get: r => {
+          const r1n = val(r, 'DATA/REF-1', 'REF-1');
+          const r1m = val(r, 'Reference-1 mobile no', 'REF-1 MOB');
+          const r2n = val(r, 'DATA/REF-2', 'REF-2');
+          const r2m = val(r, 'Reference-2 mobile no', 'REF-2 MOB');
+          const parts = [];
+          if (r1n || r1m) parts.push(`Ref1: ${r1n}${r1m ? ' (' + r1m + ')' : ''}`);
+          if (r2n || r2m) parts.push(`Ref2: ${r2n}${r2m ? ' (' + r2m + ')' : ''}`);
+          return parts.join('\n');
+        }
+      },
+      {
+        w: 24,
+        hdr: 'Vehicle Details',
+        get: r => {
+          const mk  = val(r, 'MAKE', 'Make');
+          const reg = val(r, 'REG NO', 'Reg No');
+          const ch  = val(r, 'CHASSIS NO', 'Chassis No');
+          const parts = [];
+          if (mk)  parts.push('Make: ' + mk);
+          if (reg) parts.push('Reg: ' + reg);
+          if (ch)  parts.push('Ch: ' + ch);
+          return parts.join('\n');
+        }
+      },
+      {
+        w: 20,
+        hdr: 'Dealer / TCM',
+        get: r => {
+          const dlr = val(r, 'DLR NAME', 'Dealer Name');
+          const tcm = val(r, 'TCM', 'TCM Name');
+          const parts = [];
+          if (dlr) parts.push('DLR: ' + dlr);
+          if (tcm) parts.push('TCM: ' + tcm);
+          return parts.join('\n');
+        }
+      },
+      {
+        w: 18,
+        hdr: 'Product / Status',
+        get: r => {
+          const prod = val(r, 'PRODUCT');
+          const repo = val(r, 'Repossess Repo (Y/N)?', 'Repo');
+          const sbot = val(r, 'SBOT AMOUNT', 'SBOT');
+          const parts = [];
+          if (prod) parts.push('Prod: ' + prod);
+          if (repo) parts.push('Repo: ' + repo);
+          if (sbot && sbot !== '0') parts.push('SBOT: ' + sbot);
+          return parts.join('\n');
+        }
+      }
+    ];
+
+    const totalDefined = COLS.reduce((s, c) => s + c.w, 0);
+    const scale = usableWidth / totalDefined;
+    COLS.forEach(c => c.w = c.w * scale);
+
+    return {
+      name: 'Format 2 (DMA / Agency Sheet)',
+      agencyHeader: 'Agency / DMA Name',
+      getAgency: r => val(r, 'AGENCY/DMA NAME', 'DMA/DMA NAME', 'AGENCY NAME', 'Agency Code'),
+      cols: COLS,
+      fieldCount: 30
+    };
+
+  } else {
+    // ── DYNAMIC: Any other custom Excel file ──
+    const cols = currentHeaders.map(hdr => ({
+      w: Math.max(16, Math.min(45, hdr.length * 2.5 + 8)),
+      hdr: hdr,
+      get: r => String(r[hdr] || '').trim()
+    }));
+
+    const totalDefined = cols.reduce((s, c) => s + c.w, 0);
+    const scale = usableWidth / totalDefined;
+    cols.forEach(c => c.w = c.w * scale);
+
+    return {
+      name: 'Custom Excel Format',
+      agencyHeader: 'Agency / Department',
+      getAgency: r => val(r, 'AGENCY NAME', 'AGENCY/DMA NAME', 'Agency', 'DMA', 'Branch') || 'All Records',
+      cols: cols,
+      fieldCount: currentHeaders.length
+    };
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   7. STEP 2: FORMAT & COLUMNS PREVIEW IN UI
+   ═══════════════════════════════════════════════ */
+
+function renderFormatPreview(format, headers) {
   mappingGrid.innerHTML = '';
 
-  // Detect format banner
-  const hasFormat1 = map['bkt'] && /7\+|opening/i.test(map['bkt']);
-  const hasFormat2 = (map['ref1Name'] && /ref/i.test(map['ref1Name'])) || (map['loanNo'] && /LOAN NO/i.test(map['loanNo']));
-
-  const badgeDiv = document.getElementById('formatBadge');
-  if (badgeDiv) {
-    if (hasFormat1) {
-      badgeDiv.className = 'format-badge fmt-1';
-      badgeDiv.innerHTML = '⚡ Detected Format: <strong>Format 1 (Bike Bazar Standard)</strong> — All columns mapped successfully!';
-    } else if (hasFormat2) {
-      badgeDiv.className = 'format-badge fmt-2';
-      badgeDiv.innerHTML = '⚡ Detected Format: <strong>Format 2 (DMA / Agency Sheet)</strong> — All columns mapped successfully!';
-    } else {
-      badgeDiv.className = 'format-badge fmt-custom';
-      badgeDiv.innerHTML = '⚡ Detected Format: <strong>Custom Excel Sheet</strong>';
-    }
+  if (format === 'FORMAT_1') {
+    formatBadge.className = 'format-badge fmt-1';
+    formatBadge.innerHTML = `
+      <div style="font-size: 1.1rem">✨</div>
+      <div>
+        <strong>Format 1 Detected: Bike Bazar Standard Recovery Sheet</strong><br>
+        <span style="font-size: 0.76rem; opacity: 0.9">All 22 columns from your Excel are mapped directly to Format 1 PDF layout. 0 columns missing.</span>
+      </div>
+    `;
+  } else if (format === 'FORMAT_2') {
+    formatBadge.className = 'format-badge fmt-2';
+    formatBadge.innerHTML = `
+      <div style="font-size: 1.1rem">✨</div>
+      <div>
+        <strong>Format 2 Detected: DMA / Agency Recovery Sheet</strong><br>
+        <span style="font-size: 0.76rem; opacity: 0.9">All 30 columns from your Excel (including References, Products, Alt Mobiles) are mapped directly to Format 2 PDF layout. 0 columns missing.</span>
+      </div>
+    `;
+  } else {
+    formatBadge.className = 'format-badge fmt-custom';
+    formatBadge.innerHTML = `
+      <div style="font-size: 1.1rem">✨</div>
+      <div>
+        <strong>Custom Excel File Detected</strong><br>
+        <span style="font-size: 0.76rem; opacity: 0.9">All ${headers.length} columns from your Excel will be dynamically rendered in the PDF.</span>
+      </div>
+    `;
   }
 
-  for (const fieldDef of FIELD_DEFS) {
-    const matched = map[fieldDef.key];
-    const isRequired = fieldDef.required;
+  // Display all detected columns as active verified chips
+  headers.forEach((h, index) => {
     const div = document.createElement('div');
-
-    let statusClass = 'missing';
-    let statusText = '';
-
-    if (matched) {
-      statusClass = 'found';
-      statusText = `✓ → ${matched}`;
-    } else if (!isRequired) {
-      statusClass = 'optional';
-      statusText = `ℹ Optional (Blank in this format)`;
-    } else {
-      statusClass = 'missing';
-      statusText = `✕ Missing — will be blank`;
-    }
-
-    div.className = `map-item ${statusClass}`;
+    div.className = 'map-item found';
     div.innerHTML = `
       <div class="map-header">
-        <span class="map-field">${escapeHtml(fieldDef.label)}</span>
-        ${isRequired ? '<span class="req-tag">Required</span>' : '<span class="opt-tag">Optional</span>'}
+        <span class="map-field">${escapeHtml(h)}</span>
+        <span class="req-tag" style="background: rgba(74, 222, 128, 0.15); color: #4ade80;">Active</span>
       </div>
-      <div class="map-source" id="source-${fieldDef.key}">${escapeHtml(statusText)}</div>
-      <select class="map-select" data-key="${fieldDef.key}">
-        <option value="">-- Manual Override / None --</option>
-        ${excelCols.map(c => `<option value="${escapeHtml(c)}" ${c === matched ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('')}
-      </select>
+      <div class="map-source" style="color: var(--green);">✓ Included in PDF output</div>
     `;
-
-    // Dropdown listener for manual reassignment
-    const select = div.querySelector('select');
-    select.addEventListener('change', e => {
-      const chosen = e.target.value;
-      mappedKeys[fieldDef.key] = chosen || null;
-      const srcEl = div.querySelector('.map-source');
-      if (chosen) {
-        div.className = 'map-item found';
-        srcEl.textContent = `✓ → ${chosen}`;
-      } else if (!fieldDef.required) {
-        div.className = 'map-item optional';
-        srcEl.textContent = `ℹ Optional (Blank in this format)`;
-      } else {
-        div.className = 'map-item missing';
-        srcEl.textContent = `✕ Missing — will be blank`;
-      }
-      refreshAgenciesAndStats();
-    });
-
     mappingGrid.appendChild(div);
-  }
+  });
+
+  statCols.textContent = headers.length;
 }
 
 /* ═══════════════════════════════════════════════
-   8. EXTRACT VALUE FROM ROW
-   ═══════════════════════════════════════════════ */
-
-function get(row, key) {
-  const col = mappedKeys[key];
-  if (!col) return '';
-  const val = row[col];
-  if (val === undefined || val === null) return '';
-  return String(val).trim();
-}
-
-/* ═══════════════════════════════════════════════
-   9. COMPREHENSIVE TABLE COLUMNS (12 COLUMNS)
-   Covers every data point from Format 1 & 2
-   ═══════════════════════════════════════════════ */
-
-function getTableColumns(usableWidth) {
-  const COLS = [
-    { w: 22, hdr: 'Loan No', get: r => get(r, 'loanNo') },
-    { w: 25, hdr: 'Customer Name', get: r => get(r, 'customerName') },
-    { w: 6,  hdr: 'BKT', get: r => get(r, 'bkt') },
-    { w: 11, hdr: 'POS', get: r => get(r, 'pos') },
-    {
-      w: 13,
-      hdr: 'OD Details',
-      get: r => {
-        const opn = get(r, 'openingOD');
-        const tot = get(r, 'totalOD');
-        const parts = [];
-        if (opn) parts.push('Opn: ' + opn);
-        if (tot) parts.push('Tot: ' + tot);
-        return parts.join('\n');
-      }
-    },
-    { w: 8,  hdr: 'EMI', get: r => get(r, 'emi') },
-    { w: 10, hdr: 'PI Dues', get: r => get(r, 'piDues') },
-    {
-      w: 44,
-      hdr: 'Permanent Address',
-      get: r => {
-        const addr = get(r, 'address');
-        const pin = get(r, 'pinCode');
-        if (pin && !addr.includes(pin)) {
-          return addr ? `${addr}\nPIN: ${pin}` : `PIN: ${pin}`;
-        }
-        return addr;
-      }
-    },
-    {
-      w: 44,
-      hdr: 'Contact / Reference',
-      get: r => {
-        const mob   = get(r, 'mobile');
-        const alt   = get(r, 'altMobile');
-        const alt2  = get(r, 'altMobile2');
-        const ref1n = get(r, 'ref1Name');
-        const ref1m = get(r, 'ref1Mobile');
-        const ref2n = get(r, 'ref2Name');
-        const ref2m = get(r, 'ref2Mobile');
-        const parts = [];
-        if (mob) parts.push('Mob: ' + mob);
-        if (alt) parts.push('Alt: ' + alt);
-        if (alt2) parts.push('Alt2: ' + alt2);
-        if (ref1n || ref1m) {
-          const r1 = [ref1n, ref1m ? `(${ref1m})` : ''].filter(Boolean).join(' ');
-          parts.push('Ref1: ' + r1);
-        }
-        if (ref2n || ref2m) {
-          const r2 = [ref2n, ref2m ? `(${ref2m})` : ''].filter(Boolean).join(' ');
-          parts.push('Ref2: ' + r2);
-        }
-        return parts.join('\n');
-      }
-    },
-    {
-      w: 13,
-      hdr: 'Make / Model',
-      get: r => {
-        const mk = get(r, 'make');
-        const yr = get(r, 'mfgYr');
-        return yr ? `${mk}\nYr: ${yr}` : mk;
-      }
-    },
-    {
-      w: 16,
-      hdr: 'REG / Chassis',
-      get: r => {
-        const reg = get(r, 'regNo');
-        const ch = get(r, 'chassisNo');
-        const eng = get(r, 'engineNo');
-        const parts = [];
-        if (reg) parts.push(reg);
-        if (ch) parts.push('Ch: ' + ch);
-        if (eng) parts.push('Eng: ' + eng);
-        return parts.join('\n');
-      }
-    },
-    {
-      w: 16,
-      hdr: 'DLR / TCM',
-      get: r => {
-        const dlr = get(r, 'dealerName');
-        const tcm = get(r, 'tcmName');
-        const parts = [];
-        if (dlr) parts.push(dlr);
-        if (tcm) parts.push('TCM: ' + tcm);
-        return parts.join('\n');
-      }
-    },
-  ];
-
-  const totalDefined = COLS.reduce((s, c) => s + c.w, 0);
-  const scale = usableWidth / totalDefined;
-  COLS.forEach(c => c.w = c.w * scale);
-  return COLS;
-}
-
-/* ═══════════════════════════════════════════════
-   10. PDF GENERATION (BATCH / ZIP)
+   8. PDF GENERATION (BATCH / ZIP)
    ═══════════════════════════════════════════════ */
 
 generateBtn.addEventListener('click', () => {
@@ -628,11 +545,17 @@ async function generatePDF() {
   try {
     const { jsPDF } = window.jspdf;
     const selectedAgency = agencySelect.value;
+    const MARGIN   = 3;
+    const PAGE_W   = 297;
+    const PAGE_H   = 210;
+    const USABLE_W = PAGE_W - MARGIN * 2;
 
-    // Group by Agency (preserves unassigned rows under 'Unassigned Agency')
+    const config = getFormatConfig(detectedFormat, USABLE_W);
+
+    // Group by Agency
     const groups = {};
     for (const r of parsedRows) {
-      let rawAgency = get(r, 'agencyName') || 'Unassigned Agency';
+      let rawAgency = config.getAgency(r) || 'Unassigned Agency';
       if (selectedAgency !== 'ALL' && rawAgency !== selectedAgency) continue;
 
       let safeAgency = rawAgency.replace(/[^a-z0-9_\-\s]/gi, '_').trim() || 'Agency';
@@ -669,18 +592,13 @@ async function generatePDF() {
         format: 'a4',
       });
 
-      const MARGIN   = 3;
-      const PAGE_W   = 297;
-      const PAGE_H   = 210;
-      const USABLE_W = PAGE_W - MARGIN * 2;
-
-      const COLS = getTableColumns(USABLE_W);
+      const COLS = config.cols;
       const tableBody = rows.map(r => COLS.map(c => c.get(r)));
 
       const HEADER_ROW_H = 26;
       const DATA_ROW_H   = 9;
-      const FONT_SIZE    = 8.5;
-      const HDR_FONT_SZ  = 9;
+      const FONT_SIZE    = 8.2;
+      const HDR_FONT_SZ  = 8.8;
 
       const COLOR_GOLD   = [232, 162, 23];
       const COLOR_NAVY   = [13,  27,  42];
@@ -740,7 +658,7 @@ async function generatePDF() {
           doc.setFont('helvetica', 'bold');
           doc.setFontSize(12);
           doc.setTextColor(255, 255, 255);
-          doc.text(`Agency / DMA Name : ${agencyName}`, MARGIN + 1, MARGIN + 3.5);
+          doc.text(`${config.agencyHeader} : ${agencyName}`, MARGIN + 1, MARGIN + 3.5);
 
           doc.setFillColor(...COLOR_NAVY);
           doc.rect(0, PAGE_H - MARGIN - 3, PAGE_W, MARGIN + 3, 'F');
@@ -788,8 +706,7 @@ async function generatePDF() {
 }
 
 /* ═══════════════════════════════════════════════
-   11. SEARCH AND SINGLE VIEW
-   Searches by Loan No, Customer Name, Mobile, or Reg No
+   9. SEARCH AND SINGLE VIEW
    ═══════════════════════════════════════════════ */
 
 searchBtn.addEventListener('click', doSearch);
@@ -805,37 +722,27 @@ function doSearch() {
   searchResult.classList.add('hidden');
   currentFoundRow = null;
 
+  // Search across all fields in the row
   const match = parsedRows.find(r => {
-    const ln = get(r, 'loanNo').toLowerCase();
-    const cn = get(r, 'customerName').toLowerCase();
-    const mb = get(r, 'mobile').toLowerCase();
-    const rn = get(r, 'regNo').toLowerCase();
-    return ln === query || ln.includes(query) || cn.includes(query) || mb.includes(query) || rn.includes(query);
+    return Object.values(r).some(val => String(val).toLowerCase().includes(query));
   });
 
   if (match) {
     currentFoundRow = match;
-    const fieldsToShow = [
-      'loanNo', 'customerName', 'agencyName', 'pos', 'openingOD', 'totalOD',
-      'piDues', 'emi', 'bkt', 'mobile', 'altMobile', 'altMobile2',
-      'address', 'pinCode', 'ref1Name', 'ref1Mobile', 'ref2Name', 'ref2Mobile',
-      'make', 'mfgYr', 'regNo', 'chassisNo', 'engineNo', 'dealerName', 'tcmName'
-    ];
     resultGrid.innerHTML = '';
-    for (const k of fieldsToShow) {
-      const def = FIELD_DEFS.find(d => d.key === k);
-      const val = get(match, k);
-      if (val && def) {
+    // Show all non-empty key-value pairs from the uploaded Excel row
+    for (const [k, v] of Object.entries(match)) {
+      if (v) {
         resultGrid.innerHTML += `
           <div class="r-item">
-            <div class="r-lbl">${escapeHtml(def.label)}</div>
-            <div class="r-val">${escapeHtml(val)}</div>
+            <div class="r-lbl">${escapeHtml(k)}</div>
+            <div class="r-val">${escapeHtml(v)}</div>
           </div>`;
       }
     }
     searchResult.classList.remove('hidden');
   } else {
-    searchError.textContent = `No record found matching "${searchInput.value.trim()}". Try Loan No, Customer Name, Mobile, or Reg No.`;
+    searchError.textContent = `No record found matching "${searchInput.value.trim()}".`;
     searchError.classList.remove('hidden');
   }
 }
@@ -853,14 +760,16 @@ function generateSinglePDF(row) {
   const PAGE_W   = 297;
   const PAGE_H   = 210;
   const USABLE_W = PAGE_W - MARGIN * 2;
-  const agencyName = get(row, 'agencyName') || 'Single_Record';
 
-  const COLS = getTableColumns(USABLE_W);
+  const config = getFormatConfig(detectedFormat, USABLE_W);
+  const agencyName = config.getAgency(row) || 'Single_Record';
+
+  const COLS = config.cols;
   const tableBody = [COLS.map(c => c.get(row))];
   const HEADER_ROW_H = 26;
   const DATA_ROW_H   = 9;
-  const FONT_SIZE    = 8.5;
-  const HDR_FONT_SZ  = 9;
+  const FONT_SIZE    = 8.2;
+  const HDR_FONT_SZ  = 8.8;
 
   const COLOR_GOLD   = [232, 162, 23];
   const COLOR_NAVY   = [13,  27,  42];
@@ -917,7 +826,7 @@ function generateSinglePDF(row) {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
       doc.setTextColor(255, 255, 255);
-      doc.text(`Agency / DMA Name : ${agencyName}`, MARGIN + 1, MARGIN + 3.5);
+      doc.text(`${config.agencyHeader} : ${agencyName}`, MARGIN + 1, MARGIN + 3.5);
 
       doc.setFillColor(...COLOR_NAVY);
       doc.rect(0, PAGE_H - MARGIN - 3, PAGE_W, MARGIN + 3, 'F');
@@ -929,13 +838,13 @@ function generateSinglePDF(row) {
     },
   });
 
-  const cName = get(row, 'customerName').replace(/[^a-z0-9]/gi, '_') || 'Customer';
-  const lNo = get(row, 'loanNo').replace(/[^a-z0-9]/gi, '_') || 'Loan';
+  const cName = (val(row, 'Customer Name', 'CUSTOMER', 'Customer') || 'Customer').replace(/[^a-z0-9]/gi, '_');
+  const lNo  = (val(row, 'Loan Number', 'LOAN NO', 'Loan No') || 'Record').replace(/[^a-z0-9]/gi, '_');
   doc.save(`${cName}_${lNo}_Recovery.pdf`);
 }
 
 /* ═══════════════════════════════════════════════
-   12. HELPERS
+   10. HELPERS
    ═══════════════════════════════════════════════ */
 
 function escapeHtml(str) {
@@ -948,7 +857,8 @@ function escapeHtml(str) {
 }
 
 function refreshAgenciesAndStats() {
-  const agencies = [...new Set(parsedRows.map(r => get(r, 'agencyName') || 'Unassigned Agency'))].filter(Boolean).sort();
+  const config = getFormatConfig(detectedFormat, 291);
+  const agencies = [...new Set(parsedRows.map(r => config.getAgency(r) || 'Unassigned Agency'))].filter(Boolean).sort();
   const currentSel = agencySelect.value;
   agencySelect.innerHTML = '<option value="ALL">-- Generate All (Download as ZIP) --</option>';
   agencies.forEach(ag => {
@@ -966,10 +876,12 @@ function refreshAgenciesAndStats() {
 }
 
 function updateStats() {
+  const config = getFormatConfig(detectedFormat, 291);
   const sel = agencySelect.value;
-  const filtered = sel === 'ALL' ? parsedRows : parsedRows.filter(r => (get(r, 'agencyName') || 'Unassigned Agency') === sel);
+  const filtered = sel === 'ALL' ? parsedRows : parsedRows.filter(r => (config.getAgency(r) || 'Unassigned Agency') === sel);
   statRecords.textContent = filtered.length.toLocaleString();
   statPages.textContent   = '~' + Math.ceil(filtered.length / 35);
+  statCols.textContent    = currentHeaders.length;
 }
 
 function setProgress(pct, label) {
@@ -983,8 +895,8 @@ function sleep(ms) {
 
 function resetAll() {
   parsedRows = [];
-  mappedKeys = {};
-  currentExcelCols = [];
+  currentHeaders = [];
+  detectedFormat = null;
   fileInput.value = '';
   fileInfo.classList.add('hidden');
   mappingSection.classList.add('hidden');
@@ -1001,10 +913,11 @@ function resetAll() {
 
   statRecords.textContent = '0';
   statPages.textContent   = '~0';
+  statCols.textContent    = '0';
 }
 
 /* ═══════════════════════════════════════════════
-   13. PWA & WEB SHARE TARGET / FILE HANDLING
+   11. PWA & WEB SHARE TARGET / FILE HANDLING
    ═══════════════════════════════════════════════ */
 
 if ('serviceWorker' in navigator) {
@@ -1022,7 +935,7 @@ if ('launchQueue' in window) {
       for (const fileHandle of launchParams.files) {
         const file = await fileHandle.getFile();
         handleFile(file);
-        break; // Process only the first file
+        break;
       }
     }
   });
@@ -1040,13 +953,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         const filename = response.headers.get('X-Filename') || 'shared_file.xlsx';
         const file = new File([blob], filename, { type: blob.type });
 
-        // Remove the query param from URL
         window.history.replaceState({}, document.title, window.location.pathname);
-
-        // Process the shared file
         handleFile(file);
-
-        // Clear cache
         await cache.delete('/shared-file');
       }
     } catch (err) {
