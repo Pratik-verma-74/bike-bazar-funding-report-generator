@@ -195,13 +195,13 @@ function identifyFormat(headers) {
   const has = keyword => norm.some(h => h.includes(keyword));
 
   // Format 1 identifiers: 'opening bkt', 'total pos', 'vehicle no', 'alternate mobile'
-  const isF1 = has('total pos') || has('opening bkt') || has('alternate mobile');
+  const isF1 = has('total pos') || has('opening bkt') || has('alternate mobile') || has('alternate no');
 
-  // Format 2 identifiers: 'ref 1', 'ref1', 'alt/data mob', 'dma/dma name', 'agency/dma', 'opnig od', 'totl od'
-  const isF2 = has('ref 1') || has('ref1') || has('alt/data') || has('agency/dma') || has('opnig od') || has('totl od');
+  // Format 2 identifiers: 'ref 1', 'ref1', 'alt data', 'agency dma', 'opning od', 'totl od', 'reference 1'
+  const isF2 = has('ref 1') || has('ref1') || has('reference 1') || has('alt data') || has('agency dma') || has('opning od') || has('totl od') || has('opnig od');
 
-  if (isF1 && !has('ref 1') && !has('ref1')) return 'FORMAT_1';
   if (isF2) return 'FORMAT_2';
+  if (isF1) return 'FORMAT_1';
   return 'DYNAMIC';
 }
 
@@ -385,7 +385,7 @@ function getFormatConfig(format, usableWidth) {
   } else if (format === 'FORMAT_2') {
     // ── FORMAT 2: DMA / Agency Sheet (30 Excel columns accommodated in 13 PDF columns) ──
     const COLS = [
-      { w: 20, hdr: 'Loan No', get: r => val(r, 'LOAN NO', 'Loan No') },
+      { w: 20, hdr: 'Loan No', get: r => val(r, 'LOAN NO', 'Loan No', 'Loan_No') },
       { w: 22, hdr: 'Customer Name', get: r => val(r, 'CUSTOMER', 'Customer Name') },
       { w: 6,  hdr: 'BKT', get: r => val(r, 'BKT') },
       { w: 11, hdr: 'POS', get: r => val(r, 'POS') },
@@ -393,7 +393,7 @@ function getFormatConfig(format, usableWidth) {
         w: 13,
         hdr: 'OD Details',
         get: r => {
-          const opn = val(r, 'OPNIG OD', 'Opening OD');
+          const opn = val(r, 'OPNIG OD', 'Opening OD', 'Opning OD');
           const tot = val(r, 'TOTL OD', 'Total OD');
           const parts = [];
           if (opn) parts.push('Opn: ' + opn);
@@ -401,13 +401,13 @@ function getFormatConfig(format, usableWidth) {
           return parts.join('\n');
         }
       },
-      { w: 9, hdr: 'PI Dues', get: r => val(r, 'PI DUES', 'PI Due') },
+      { w: 9, hdr: 'PI Dues', get: r => val(r, 'PI DUES', 'PI Due', 'PI Dues') },
       { w: 8, hdr: 'EMI', get: r => val(r, 'EMI AMOUNT', 'EMI') },
       {
         w: 38,
         hdr: 'Permanent Address',
         get: r => {
-          const addr = val(r, 'PERMNT ADD', 'Permanent Address', 'Address');
+          const addr = val(r, 'PERMNT ADD', 'Permanent Address', 'Address', 'Customer Address', 'Permanent Addres');
           const pin = val(r, 'PIN CODE', 'Pin Code');
           if (pin && !addr.includes(pin)) return addr ? `${addr}\nPIN: ${pin}` : `PIN: ${pin}`;
           return addr;
@@ -417,8 +417,8 @@ function getFormatConfig(format, usableWidth) {
         w: 34,
         hdr: 'Contact & Alt Mob',
         get: r => {
-          const mob  = val(r, 'CONTACT', 'Contact Number', 'Contact No', 'Customer Mobile', 'Mobile No', 'Mobile', 'Phone');
-          const alt1 = val(r, 'ALT/DATA MOB-1', 'ALT MOB-1', 'ALT/DATA MOB 1', 'Alternate Mobile no', 'Alternate Mobile', 'Alt Mobile');
+          const mob  = val(r, 'CONTACT', 'Contact Number', 'Contact No', 'Customer Mobile', "Customer's Mobile", 'Mobile No', 'Mobile', 'Phone');
+          const alt1 = val(r, 'ALT/DATA MOB-1', 'ALT MOB-1', 'ALT/DATA MOB 1', 'Alternate Mobile no', 'Alternate Mobile', 'Alt Mobile', 'Alternate No');
           const alt2 = val(r, 'ALT/DATA MOB-2', 'ALT MOB-2', 'ALT/DATA MOB 2', 'Alternate Mobile 2', 'Alt Mobile 2');
           return formatContactNumbers(mob, alt1, alt2);
         }
@@ -427,10 +427,10 @@ function getFormatConfig(format, usableWidth) {
         w: 36,
         hdr: 'References',
         get: r => {
-          const r1n = val(r, 'DATA/REF-1', 'REF-1', 'Reference 1');
-          const r1m = cleanPhone(val(r, 'Reference-1 mobile no', 'REF-1 MOB', 'Reference 1 Mobile'));
-          const r2n = val(r, 'DATA/REF-2', 'REF-2', 'Reference 2');
-          const r2m = cleanPhone(val(r, 'Reference-2 mobile no', 'REF-2 MOB', 'Reference 2 Mobile'));
+          const r1n = val(r, 'DATA/REF-1', 'REF-1', 'Reference 1', 'Reference -1');
+          const r1m = cleanPhone(val(r, 'Reference-1 mobile no', 'REF-1 MOB', 'Reference 1 Mobile', 'Reference-1 mobil'));
+          const r2n = val(r, 'DATA/REF-2', 'REF-2', 'Reference 2', 'Reference -2');
+          const r2m = cleanPhone(val(r, 'Reference-2 mobile no', 'REF-2 MOB', 'Reference 2 Mobile', 'Reference-2 mobil'));
           const parts = [];
           if (r1n || r1m) parts.push(`Ref1: ${r1n}${r1m ? ' (' + r1m + ')' : ''}`);
           if (r2n || r2m) parts.push(`Ref2: ${r2n}${r2m ? ' (' + r2m + ')' : ''}`);
@@ -443,7 +443,7 @@ function getFormatConfig(format, usableWidth) {
         get: r => {
           const mk  = val(r, 'MAKE', 'Make');
           const reg = val(r, 'REG NO', 'Reg No');
-          const ch  = val(r, 'CHASSIS NO', 'Chassis No');
+          const ch  = val(r, 'CHASSIS NO', 'Chassis No', 'CHASIS NO');
           const parts = [];
           if (mk)  parts.push('Make: ' + mk);
           if (reg) parts.push('Reg: ' + reg);
@@ -455,7 +455,7 @@ function getFormatConfig(format, usableWidth) {
         w: 20,
         hdr: 'Dealer / TCM',
         get: r => {
-          const dlr = val(r, 'DLR NAME', 'Dealer Name');
+          const dlr = val(r, 'DLR NAME', 'Dealer Name', 'DLR Name');
           const tcm = val(r, 'TCM', 'TCM Name');
           const parts = [];
           if (dlr) parts.push('DLR: ' + dlr);
@@ -467,7 +467,7 @@ function getFormatConfig(format, usableWidth) {
         w: 18,
         hdr: 'Product / Status',
         get: r => {
-          const prod = val(r, 'PRODUCT');
+          const prod = val(r, 'PRODUCT', 'Product');
           const repo = val(r, 'Repossess Repo (Y/N)?', 'Repo');
           const sbot = val(r, 'SBOT AMOUNT', 'SBOT');
           const parts = [];
@@ -637,10 +637,10 @@ async function generatePDF() {
       const COLS = config.cols;
       const tableBody = rows.map(r => COLS.map(c => c.get(r)));
 
-      const HEADER_ROW_H = 26;
+      const HEADER_ROW_H = 10;
       const DATA_ROW_H   = 9;
       const FONT_SIZE    = 8.2;
-      const HDR_FONT_SZ  = 8.8;
+      const HDR_FONT_SZ  = 8.2;
 
       const COLOR_GOLD   = [232, 162, 23];
       const COLOR_NAVY   = [13,  27,  42];
@@ -663,7 +663,7 @@ async function generatePDF() {
         headStyles: {
           fillColor: COLOR_GOLD, textColor: COLOR_NAVY, fontStyle: 'bold', fontSize: HDR_FONT_SZ,
           cellPadding: { top: 1, right: 1, bottom: 1, left: 1 },
-          minCellHeight: HEADER_ROW_H, valign: 'bottom', overflow: 'hidden',
+          minCellHeight: HEADER_ROW_H, valign: 'middle', halign: 'center', overflow: 'linebreak',
         },
         bodyStyles: {
           fontSize: FONT_SIZE, textColor: COLOR_NAVY,
@@ -672,24 +672,6 @@ async function generatePDF() {
         },
         alternateRowStyles: { fillColor: COLOR_STRIPE },
         styles: { font: 'helvetica', overflow: 'linebreak', lineColor: COLOR_BORDER, lineWidth: 0.15 },
-        didDrawCell(data) {
-          if (data.section !== 'head') return;
-          const { x, y, width, height } = data.cell;
-          const txt = data.cell.raw;
-          doc.setFillColor(...COLOR_GOLD);
-          doc.rect(x, y, width, height, 'F');
-          doc.setDrawColor(...COLOR_BORDER);
-          doc.setLineWidth(0.15);
-          doc.rect(x, y, width, height, 'S');
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(HDR_FONT_SZ);
-          doc.setTextColor(...COLOR_NAVY);
-          const cx = x + width / 2;
-          const cy = y + height - 2;
-          doc.saveGraphicsState();
-          doc.text(txt, cx, cy, { angle: 90, align: 'left', baseline: 'middle' });
-          doc.restoreGraphicsState();
-        },
         didDrawPage(data) {
           const pageCount = doc.internal.getNumberOfPages();
           const pageNum   = data.pageNumber;
@@ -810,10 +792,10 @@ function generateSinglePDF(row) {
 
   const COLS = config.cols;
   const tableBody = [COLS.map(c => c.get(row))];
-  const HEADER_ROW_H = 26;
+  const HEADER_ROW_H = 10;
   const DATA_ROW_H   = 9;
   const FONT_SIZE    = 8.2;
-  const HDR_FONT_SZ  = 8.8;
+  const HDR_FONT_SZ  = 8.2;
 
   const COLOR_GOLD   = [232, 162, 23];
   const COLOR_NAVY   = [13,  27,  42];
@@ -836,7 +818,7 @@ function generateSinglePDF(row) {
     headStyles: {
       fillColor: COLOR_GOLD, textColor: COLOR_NAVY, fontStyle: 'bold', fontSize: HDR_FONT_SZ,
       cellPadding: { top: 1, right: 1, bottom: 1, left: 1 },
-      minCellHeight: HEADER_ROW_H, valign: 'bottom', overflow: 'hidden',
+      minCellHeight: HEADER_ROW_H, valign: 'middle', halign: 'center', overflow: 'linebreak',
     },
     bodyStyles: {
       fontSize: FONT_SIZE, textColor: COLOR_NAVY,
@@ -845,24 +827,6 @@ function generateSinglePDF(row) {
     },
     alternateRowStyles: { fillColor: COLOR_STRIPE },
     styles: { font: 'helvetica', overflow: 'linebreak', lineColor: COLOR_BORDER, lineWidth: 0.15 },
-    didDrawCell(data) {
-      if (data.section !== 'head') return;
-      const { x, y, width, height } = data.cell;
-      const txt = data.cell.raw;
-      doc.setFillColor(...COLOR_GOLD);
-      doc.rect(x, y, width, height, 'F');
-      doc.setDrawColor(...COLOR_BORDER);
-      doc.setLineWidth(0.15);
-      doc.rect(x, y, width, height, 'S');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(HDR_FONT_SZ);
-      doc.setTextColor(...COLOR_NAVY);
-      const cx = x + width / 2;
-      const cy = y + height - 2;
-      doc.saveGraphicsState();
-      doc.text(txt, cx, cy, { angle: 90, align: 'left', baseline: 'middle' });
-      doc.restoreGraphicsState();
-    },
     didDrawPage(data) {
       doc.setFillColor(...COLOR_NAVY);
       doc.rect(0, 0, PAGE_W, MARGIN + 6, 'F');
@@ -899,23 +863,30 @@ function generateSinglePDF(row) {
 const PAYMENT_CONFIG = {
   phone: '7463053829',
   upiId: '7463053829@ybl',
-  payeeName: 'Pratik Verma',
-  singleFee: '10.00',
-  allFee: '50.00',
+  payeeName: 'Pratik Verma'
 };
+
+let pendingDownloadType = null;
 
 function triggerDirectPaymentAndDownload(type) {
   const isSingle = type === 'SINGLE';
-  const amount = isSingle ? PAYMENT_CONFIG.singleFee : PAYMENT_CONFIG.allFee;
+  let amount = 10;
+  if (!isSingle && agencySelect.value === 'ALL') {
+    // Number of agencies (excluding the "ALL" option)
+    amount = Math.max(1, agencySelect.options.length - 1) * 10;
+  }
+  
   const note = isSingle ? 'Single Record Recovery PDF' : 'All Records Recovery PDF';
   const tr = 'REC' + Date.now();
 
   // NPCI UPI Standard: Setting mam equal to am locks the amount in PhonePe/UPI apps
   // making it read-only so the payer cannot modify or alter the amount!
-  const upiUrl = `upi://pay?pa=${encodeURIComponent(PAYMENT_CONFIG.upiId)}&pn=${encodeURIComponent(PAYMENT_CONFIG.payeeName)}&am=${amount}&mam=${amount}&cu=INR&tn=${encodeURIComponent(note)}&tr=${tr}`;
+  const upiUrl = `upi://pay?pa=${encodeURIComponent(PAYMENT_CONFIG.upiId)}&pn=${encodeURIComponent(PAYMENT_CONFIG.payeeName)}&am=${amount}.00&mam=${amount}.00&cu=INR&tn=${encodeURIComponent(note)}&tr=${tr}`;
 
   // Show a sleek non-blocking notification toast
-  showToast(`📱 PhonePe / UPI launch: ₹${amount} (Locked Amount)... PDF download shuru!`);
+  showToast(`📱 PhonePe / UPI launch: ₹${amount} (Locked Amount)... Complete payment to download!`);
+
+  pendingDownloadType = type;
 
   // Direct app launch via UPI intent protocol without any popups or confirmation questions
   try {
@@ -923,16 +894,22 @@ function triggerDirectPaymentAndDownload(type) {
   } catch (err) {
     console.warn('Direct UPI launch triggered:', err);
   }
-
-  // Automatic PDF generation & download trigger
-  setTimeout(() => {
-    if (isSingle) {
-      if (currentFoundRow) generateSinglePDF(currentFoundRow);
-    } else {
-      generatePDF();
-    }
-  }, 400);
 }
+
+// When the user returns from the UPI app (browser regains focus), generate the PDF!
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && pendingDownloadType) {
+    showToast('Verifying payment & generating PDF...');
+    setTimeout(() => {
+      if (pendingDownloadType === 'SINGLE') {
+        if (currentFoundRow) generateSinglePDF(currentFoundRow);
+      } else {
+        generatePDF();
+      }
+      pendingDownloadType = null;
+    }, 500);
+  }
+});
 
 // Toast notification helper (non-blocking)
 function showToast(message) {
@@ -989,6 +966,14 @@ function updateStats() {
   statRecords.textContent = filtered.length.toLocaleString();
   statPages.textContent   = '~' + Math.ceil(filtered.length / 35);
   statCols.textContent    = currentHeaders.length;
+
+  const numAgencies = sel === 'ALL' ? Math.max(1, agencySelect.options.length - 1) : 1;
+  const price = numAgencies * 10;
+  
+  const genBtnText = document.getElementById('genBtnText');
+  const batchPayAmountText = document.getElementById('batchPayAmountText');
+  if (genBtnText) genBtnText.textContent = `⬇ Generate & Download PDF — ₹${price}`;
+  if (batchPayAmountText) batchPayAmountText.textContent = `Fixed ₹${price} (Locked Amount)`;
 }
 
 function setProgress(pct, label) {
