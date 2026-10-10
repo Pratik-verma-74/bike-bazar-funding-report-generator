@@ -876,9 +876,9 @@ function triggerDirectPaymentAndDownload(type) {
     amount = Math.max(1, agencySelect.options.length - 1) * 10;
   }
   
-  // Simplified UPI URL for P2P personal IDs. Removing 'mam' and 'tr' because PhonePe
-  // often throws errors if these merchant-specific parameters are passed to a personal UPI ID.
-  const upiUrl = `upi://pay?pa=${encodeURIComponent(PAYMENT_CONFIG.upiId)}&pn=${encodeURIComponent(PAYMENT_CONFIG.payeeName)}&am=${amount}.00&cu=INR`;
+  // Simplified UPI URL for P2P personal IDs. We include mc=0000 (Generic Merchant Code)
+  // because PhonePe sometimes throws "Something went wrong" without it.
+  const upiUrl = `upi://pay?pa=${encodeURIComponent(PAYMENT_CONFIG.upiId)}&pn=${encodeURIComponent(PAYMENT_CONFIG.payeeName)}&am=${amount}.00&cu=INR&mc=0000`;
 
   // Show a sleek non-blocking notification toast
   showToast(`📱 PhonePe / UPI launch: ₹${amount} (Locked Amount)... Complete payment to download!`);
