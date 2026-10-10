@@ -876,12 +876,9 @@ function triggerDirectPaymentAndDownload(type) {
     amount = Math.max(1, agencySelect.options.length - 1) * 10;
   }
   
-  const note = isSingle ? 'Single Record Recovery PDF' : 'All Records Recovery PDF';
-  const tr = 'REC' + Date.now();
-
-  // NPCI UPI Standard: Setting mam equal to am locks the amount in PhonePe/UPI apps
-  // making it read-only so the payer cannot modify or alter the amount!
-  const upiUrl = `upi://pay?pa=${encodeURIComponent(PAYMENT_CONFIG.upiId)}&pn=${encodeURIComponent(PAYMENT_CONFIG.payeeName)}&am=${amount}.00&mam=${amount}.00&cu=INR&tn=${encodeURIComponent(note)}&tr=${tr}`;
+  // Simplified UPI URL for P2P personal IDs. Removing 'mam' and 'tr' because PhonePe
+  // often throws errors if these merchant-specific parameters are passed to a personal UPI ID.
+  const upiUrl = `upi://pay?pa=${encodeURIComponent(PAYMENT_CONFIG.upiId)}&pn=${encodeURIComponent(PAYMENT_CONFIG.payeeName)}&am=${amount}.00&cu=INR`;
 
   // Show a sleek non-blocking notification toast
   showToast(`📱 PhonePe / UPI launch: ₹${amount} (Locked Amount)... Complete payment to download!`);
